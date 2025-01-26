@@ -1,9 +1,9 @@
 /* Cool Javascript Find on this Page 
-Ver 5.3
+Ver 5.4i
 Written by Jeff Baker on September, 8, 2007.
 Copyright 2014 by Jeff Baker - 
 Version 5.0 created 7/16/2014
-Updated 8/16/2021 Ver 5.4f
+Updated 1/21/2025 Version 5.4k
 http://www.seabreezecomputers.com/tips/find.htm
 Paste the following javascript call in your HTML web page where
 you want a button called "Find on this Page...":
@@ -38,6 +38,7 @@ var find_title_color = "white"; // color of window title text
 var find_window_width = 255; // width of window // Version 5.4h - From 245 to 255
 //var find_window_height = 85; // height of window - Version 5.3f - No Longer Using
 var find_root_node = null; // Leave as null to search entire doc or put id of div to search (ex: 'content'). Ver 5.0a - 7/18/2014
+var find_start_at_scroll = 1; // 1 = Always highlight first find at current scroll position // Version 5.4i
 /* Do not edit the variables below this line */
 
 // Simple drag object to hold all the variables for dragging
@@ -56,7 +57,7 @@ var find_text = ''; // Global variable of searched for text
 var found_highlight_rule = 0; // whether there is a highlight css rule
 var found_selected_rule = 0; // whether there is a selected css rule
 
-if (!find_window_fixed) { // Version 5.4f
+//if (!find_window_fixed) { // Version 5.4f // Version 5.4i - Removed
 document.onmousedown = MouseDown;
 document.onmousemove = MouseMove;
 document.onmouseup = MouseUp;
@@ -69,7 +70,7 @@ document.addEventListener("touchstart", MouseDown, false); // Version 5.4g - Add
 document.addEventListener("touchmove", MouseMove, { passive: false }); // Version 5.4g - { passive: false } Needed to prevent iphone from scrolling screen on drag
 document.addEventListener("touchend", MouseUp, false); // Version 5.4g - Added just to match touchmove
 
-}
+//} // Version 5.4i - Removed
 
 
 function highlight(word, node)
@@ -217,9 +218,12 @@ function findit(dir) // Version 5.4f - Added dir
 		
 		highlight(string, node); // highlight all occurrences of search string
 		
-		if (highlights.length > 0) // if we found occurences
+		if (highlights.length > 0) // if we found occurrences
 		{
 			find_pointer = -1;
+			if (find_start_at_scroll) // Version 5.4i
+				find_pointer = find_highlight_at_scroll();
+			clearSelection(); // Version 5.4i
 			if (dir == 1) findnext(); // Find the next occurrence // Version 5.4f - Added if (dir == 1) 
 			else findprev(); // Version 5.4f - Added else findprev();
 		}
@@ -271,8 +275,10 @@ function findnext()
 	setTimeout(function(){ 
 		scrollToPosition(highlights[find_pointer]);
 	}, 250); // Version 5.4f - Android chrome was not scrolling to first find because keyboard taking too long to close?
+	
+	toggle_details(highlights[find_pointer]); // Version 5.4j
+	
 } // end findnext()
-
 
 
 // This function is to find backwards by pressing the Prev button
@@ -315,6 +321,8 @@ function findprev()
 		scrollToPosition(highlights[find_pointer]);
 	}, 250); // Version 5.4f - Android chrome was not scrolling to first find because keyboard taking too long to close?
 	
+	toggle_details(highlights[find_pointer]); // Version 5.4j
+	
 } // end findprev()
 
 
@@ -349,6 +357,8 @@ function checkkey(e)
 // so they can type in what they want to search for
 function show()
 {
+	if (!find_window_fixed) // Version 5.4i - Put find window at current scrollTop
+		findwindow.style.top = (document.body.scrollTop || document.documentElement.scrollTop || 0) + "px"; // Version 5.4i
 	// Object to hold textbox so we can focus on it
 	// so user can just start typing after "find" button
 	// is clicked
@@ -544,7 +554,7 @@ function MouseMove(event)
 		drag.tempx += scrollLeft;
 		drag.tempy += scrollTop;
 		
-		drag.drag_obj.style.position = 'absolute';
+		//drag.drag_obj.style.position = 'absolute'; // Version 5.4i - Removed so can move window even with "fixed" position
 		
 		/* if touchevents from iphone */
 		if (event.type == "touchmove")
@@ -604,6 +614,13 @@ function isOnScreen(el) // Version 5.4d
 		left, top, right, bottom of
 		an element relative to the current screen viewport */ 
 	var rect = el.getBoundingClientRect();
+	/* Version 5.4k - It was detecting onScreen even if a parent element is scrollable and el was out of view 
+		in the parent scrollable element. */
+	for (var parentEl = el.parentElement; parentEl; parentEl = parentEl.parentElement) {
+		var parentRect = parentEl.getBoundingClientRect();
+		if (parentRect.top > rect.top || parentRect.bottom < rect.bottom)
+			return false;
+	}
 	if (rect.bottom >= 0 && rect.right >= 0 && 
 		rect.top <= screenHeight && rect.left <= screenWidth) // Version 1.2.0 - Changed from scrollBottom and scrollRight
 		return true;
@@ -887,4 +904,26 @@ document.getElementById('fwtext').onkeydown = checkkey;
 
 var find_msg = document.getElementById('find_msg');
 
+function find_highlight_at_scroll() { // Version 5.4i - Start find at current scroll position
+	var scrollTop = window.scrollY || window.pageYOffset || document.body.scrollTop || document.documentElement.scrollTop || 0;
+	var pointer = -1;
+	for (var i = 0; i < highlights.length; i++) {
+		if ((highlights[i].getBoundingClientRect().y + scrollTop) > scrollTop)
+			break;
+		pointer = i;
+	}
+	return pointer;
+}
 
+function clearSelection() { // Version 5.4i
+ if (window.getSelection) {window.getSelection().removeAllRanges();}
+ else if (document.selection) {document.selection.empty();}
+}
+
+function toggle_details(el) { // Version 5.4j - Open details tag if text find is in it
+	if (typeof el["closest"] === "function") {
+		var details_tag = el.closest("details");
+		if (details_tag != null)
+			details_tag.open = true;
+	}
+}
