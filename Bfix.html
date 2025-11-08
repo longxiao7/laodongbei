@@ -76,24 +76,33 @@ button:hover {
         <form id="searchForm">
             <input type="text" id="searchInput" placeholder="请输入BV号" required>
             <button type="submit">提交</button>
+            <br>
+            <button id="cp" type="button">复制</button>
         </form>
     </div>
     <script>
     document.getElementById('searchForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // 防止表单默认提交行为
+		event.preventDefault(); // 防止表单默认提交行为
 
-    const query = document.getElementById('searchInput').value;
+		const query = document.getElementById('searchInput').value;
 
-    let r1 = query.match(/BV[A-Za-z0-9]+/);
-    if(r1 !== null){
-		document.getElementById('searchInput').value = 'https://www.bilibili.com/video/'+ r1[0] +'/';
-    }else{
-		resultDiv.textContent = '请输入BV号';
-        return;
-    }
-	
-    
-});
+		let r1 = query.match(/BV[A-Za-z0-9]+/);
+		if(r1 !== null){
+			document.getElementById('searchInput').value = 'https://www.bilibili.com/video/'+ r1[0] +'/';
+		}else{
+			resultDiv.textContent = '请输入BV号';
+			return;
+		}
+		
+		
+	});
+    document.getElementById('cp').addEventListener('click', async () => {
+		const query = document.getElementById('searchInput').value;
+		await navigator.clipboard.writeText(query);
+		document.getElementById('searchInput').value = "";
+	})
+
+;
     </script>
 </body>
 </html>
